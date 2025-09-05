@@ -45,7 +45,7 @@ def dashboard():
 
     # ---------- GRÁFICOS ----------
     with st.container():
-        col1, col2 = st.columns([2,2])  # mais espaço para os gráficos
+        col1, col2 = st.columns([1.5,1.5])  # mais espaço para os gráficos
 
         with col1:
             st.subheader("📊 Vendas por Produto (Últimos 7 dias)")
