@@ -225,6 +225,7 @@ def modulo_producao():
             fig = px.bar(ranking_producao.head(10), x='produto', y='quantidade',
                         color='custo_total',
                         title="Ranking de Produção por Produto",
+                        text='quantidade',
                         color_continuous_scale='Oranges')
             fig.update_layout(xaxis_tickangle=-45)
             st.plotly_chart(fig, use_container_width=True)

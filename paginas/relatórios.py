@@ -79,14 +79,24 @@ def modulo_relatorios():
         """, (datetime.now().date() - timedelta(days=30),))
 
         if not ranking_produtos.empty:
-            # top produtos por receita
+    # top produtos por receita
             st.subheader("🏆 Top Produtos por Receita (Últimos 30 dias)")
-            fig = px.bar(ranking_produtos.head(10), 
-                        x='nome', y='receita',
-                        color='margem',
-                        title="Receita por Produto",
-                        color_continuous_scale='Viridis')
-            fig.update_layout(xaxis_tickangle=-45)
+            fig = px.bar(
+                ranking_produtos.head(20), 
+                x='nome', 
+                y='receita',
+                text='receita',              # mostra os valores nas barras
+                color='margem',              # cor baseada na margem
+                title="Receita por Produto",
+                color_continuous_scale=['#CFF5E0', '#5C977C'],  # degradê do verde claro ao verde forte
+                labels={'margem': 'Margem (%)', 'receita': 'Receita (R$)'}
+            )
+            fig.update_traces(texttemplate='R$ %{text:.2f}', textposition='outside')
+            fig.update_layout(xaxis_tickangle=-45,
+                            plot_bgcolor='#F6FAF8',
+                            paper_bgcolor='#F6FAF8',
+                            font=dict(color='#1F2A27', family='sans serif')
+                            )
             st.plotly_chart(fig, use_container_width=True)
 
             # tabela completa
@@ -139,13 +149,38 @@ def modulo_relatorios():
             col1, col2 = st.columns(2)
             
             with col1:
-                fig = px.bar(vendas_semana, x='dia_semana', y='faturamento',
-                           title="Faturamento por Dia da Semana")
+                fig = px.bar(
+                    vendas_semana,
+                    x='dia_semana', 
+                    y='faturamento',
+                    text='faturamento',  # rótulos nas barras
+                    title="Faturamento por Dia da Semana",
+                    color_discrete_sequence=['#5C977C']  # cor tema
+                )
+                fig.update_traces(texttemplate='R$ %{text:.2f}', textposition='outside')
+                fig.update_layout(
+                    plot_bgcolor='#F6FAF8',
+                    paper_bgcolor='#F6FAF8',
+                    font=dict(color='#1F2A27', family='sans serif')
+                )
                 st.plotly_chart(fig, use_container_width=True)
             
             with col2:
-                fig = px.bar(vendas_semana, x='dia_semana', y='produtos_vendidos',
-                           title="Produtos Vendidos por Dia da Semana")
+                fig = px.bar(
+                    vendas_semana,
+                    x='dia_semana',
+                    y='produtos_vendidos',
+                    text='produtos_vendidos',  # rótulos nas barras
+                    title="Produtos Vendidos por Dia da Semana",
+                    color_discrete_sequence=['#5C977C']
+                )
+                fig.update_traces(textposition='outside')
+                fig.update_layout(
+                    plot_bgcolor='#F6FAF8',
+                    paper_bgcolor='#F6FAF8',
+                    font=dict(color='#1F2A27', family='sans serif')
+                )
                 st.plotly_chart(fig, use_container_width=True)
+
 
 
