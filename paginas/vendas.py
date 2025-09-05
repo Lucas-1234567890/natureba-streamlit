@@ -1,101 +1,125 @@
 import streamlit as st
 import pandas as pd
-from banco import get_dataframe, executar_query
 from datetime import datetime, timedelta
+from banco import get_dataframe, executar_query
 
 def modulo_vendas():
-    st.header("💰 Registro de Vendas")
-    
+    st.header("💰 Vendas")
+
     tab1, tab2 = st.tabs(["➕ Nova Venda", "📋 Histórico"])
 
+    # --------------------
+    # Aba 1: Nova Venda
+    # --------------------
     with tab1:
-        st.subheader("Registrar Nova Venda")
-
-        # Buscar produtos ativos
-        produtos = get_dataframe("SELECT id, nome, preco_venda FROM produtos WHERE ativo = 1 ORDER BY nome")
-
+        produtos = get_dataframe("SELECT id, nome, preco_venda FROM produtos WHERE ativo=1 ORDER BY nome")
         if produtos.empty:
             st.warning("⚠️ Cadastre produtos antes de registrar vendas!")
             return
         
-        with st.form("form_nova_venda"):
+        with st.form("nova_venda"):
             col1, col2, col3 = st.columns(3)
-
             with col1:
-                produto_selecionado = st.selectbox("Produto*", 
-                                                 options=produtos['id'].tolist(),
-                                                 format_func=lambda x: produtos[produtos['id']==x]['nome'].iloc[0])
-            
+                produto_id = st.selectbox(
+                    "Produto",
+                    options=produtos['id'],
+                    format_func=lambda x: produtos.loc[produtos['id']==x, 'nome'].values[0]
+                )
             with col2:
-                quantidade = st.number_input("Quantidade*", min_value=1, step=1, value=1)
-
+                qtd = st.number_input("Quantidade", min_value=1, value=1)
             with col3:
-                data_venda = st.date_input("Data da Venda*", value=datetime.now().date())
-
-            # mostrar informações do produto selecionado
-            if produto_selecionado:
-                produto_info = produtos[produtos['id']==produto_selecionado].iloc[0]
-                preco_unitario = produto_info['preco_venda']
-                total = preco_unitario * quantidade
-
-                st.info(f"💰 Produto: {produto_info['nome']} | Preço: R$ {preco_unitario:.2f} | Total: R$ {total:.2f}")
-
-            submitted = st.form_submit_button("✅ Registrar Venda")
-
+                data = st.date_input("Data da venda", value=datetime.now().date())
+            
+            submitted = st.form_submit_button("Registrar")
             if submitted:
-                if submitted:
-                    if produto_selecionado and quantidade > 0:
-                        try:
-                            executar_query(
-                                "INSERT INTO vendas (produto_id, quantidade, preco_unitario, total, data_venda) VALUES (?, ?, ?, ?, ?)",
-                                (produto_selecionado, quantidade, preco_unitario, total, data_venda)
-                            )
-                            st.success(f"✅ Venda registrada: {quantidade}x {produto_info['nome']} = R$ {total:.2f}")
-                            st.rerun()
-                        except Exception as e:
-                            st.error(f"❌ Erro ao registrar venda: {str(e)}")
-                    else:
-                        st.error("❌ Preencha todos os campos obrigatórios!")
+                produto = produtos[produtos['id']==produto_id].iloc[0]
+                total = float(produto['preco_venda']) * qtd
+                executar_query(
+                    "INSERT INTO vendas (produto_id, quantidade, preco_unitario, total, data_venda) VALUES (?, ?, ?, ?, ?)",
+                    (int(produto_id), int(qtd), float(produto['preco_venda']), total, data)
+                )
+                st.success(f"Venda registrada: {qtd}x {produto['nome']} = R$ {total:.2f}")
+                st.rerun()
 
+    # --------------------
+    # Aba 2: Histórico / CRUD
+    # --------------------
     with tab2:
-        st.subheader("Histórico de Vendas")
-
-        col1,col2 = st.columns(2)
-
+        # filtros
+        col1, col2 = st.columns(2)
         with col1:
-            data_inicio = st.date_input("Data Início", value=datetime.now().date() - timedelta(days=7))
-
+            inicio = st.date_input("Data início", value=datetime.now().date() - timedelta(days=7))
         with col2:
-           with col2:
-            data_fim = st.date_input("Data Fim", value=datetime.now().date())
+            fim = st.date_input("Data fim", value=datetime.now().date())
 
         vendas = get_dataframe("""
-            SELECT v.data_venda, v.hora_venda, p.nome as produto,
-                   v.quantidade, v.preco_unitario, v.total
+            SELECT v.id, v.data_venda, p.nome as produto, v.quantidade, v.preco_unitario, v.total
             FROM vendas v
             JOIN produtos p ON v.produto_id = p.id
             WHERE v.data_venda BETWEEN ? AND ?
-            ORDER BY v.data_venda DESC, v.hora_venda DESC
-        """, (data_inicio, data_fim))
-        
-        if not vendas.empty:
-            # Resumo do período
-            total_vendas = vendas['total'].sum()
-            total_itens = vendas['quantidade'].sum()
-            
-            col1, col2 = st.columns(2)
-            with col1:
-                st.metric("💰 Total do Período", f"R$ {total_vendas:.2f}")
-            with col2:
-                st.metric("🥖 Itens Vendidos", f"{int(total_itens)}")
-            
-            # Tabela de vendas
-            st.dataframe(
-                vendas.style.format({
-                    'preco_unitario': 'R$ {:.2f}',
-                    'total': 'R$ {:.2f}'
-                }),
-                use_container_width=True
-            )
-        else:
-            st.info("Nenhuma venda encontrada no período selecionado.")
+            ORDER BY v.data_venda DESC
+        """, (inicio, fim))
+
+        if vendas.empty:
+            st.info("Nenhuma venda encontrada.")
+            return
+
+        # mostra tabela
+        st.subheader("Vendas")
+        st.dataframe(
+            vendas.rename(columns={
+                'id': 'ID', 
+                'data_venda': 'Data', 
+                'produto': 'Produto', 
+                'quantidade': 'Qtd', 
+                'preco_unitario': 'Preço Unit.', 
+                'total': 'Total'
+            }).style.format({
+                'Preço Unit.': 'R$ {:.2f}',
+                'Total': 'R$ {:.2f}'
+            }),
+            use_container_width=True
+        )
+
+        # --------------------
+        # Área de edição/exclusão
+        # --------------------
+        st.subheader("Editar / Excluir Venda")
+        opções = vendas.apply(
+            lambda r: f"{r['id']} — {r['data_venda']} — {r['produto']} ({r['quantidade']}x) R$ {r['total']:.2f}", axis=1
+        ).tolist()
+        mapping = {opções[i]: int(vendas.iloc[i]['id']) for i in range(len(opções))}
+
+        sel = st.selectbox("Selecione a venda", ["-- nada --"] + opções)
+        if sel != "-- nada --":
+            vid = mapping[sel]
+            row = vendas[vendas['id'] == vid].iloc[0]
+
+            with st.form(f"form_edit_{vid}"):
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    qtd_edit = st.number_input("Quantidade", min_value=1, value=int(row['quantidade']))
+                with col2:
+                    preco_edit = st.number_input("Preço unit.", min_value=0.0, format="%.2f", value=float(row['preco_unitario']))
+                with col3:
+                    data_edit = st.date_input("Data", value=pd.to_datetime(row['data_venda']).date())
+
+                col1, col2 = st.columns(2)
+                with col1:
+                    salvar = st.form_submit_button("💾 Salvar")
+                with col2:
+                    excluir = st.form_submit_button("🗑️ Excluir")
+
+                if salvar:
+                    total_edit = qtd_edit * preco_edit
+                    executar_query(
+                        "UPDATE vendas SET quantidade=?, preco_unitario=?, total=?, data_venda=? WHERE id=?",
+                        (int(qtd_edit), float(preco_edit), float(total_edit), data_edit, vid)
+                    )
+                    st.success("Venda atualizada.")
+                    st.rerun()
+
+                if excluir:
+                    executar_query("DELETE FROM vendas WHERE id=?", (vid,))
+                    st.warning("Venda excluída.")
+                    st.rerun()
