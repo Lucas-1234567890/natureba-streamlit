@@ -1,0 +1,7 @@
+[theme]
+base = "light"
+primaryColor = "#5C977C"            # verde Natureba
+backgroundColor = "#F6FAF8"         # fundo bem claro
+secondaryBackgroundColor = "#EAF3EF" # cartões/sidebars
+textColor = "#1F2A27"               # texto escuro confortável
+font = "sans serif"
