@@ -7,6 +7,7 @@ from paginas import relatórios
 from paginas import configuracao
 from paginas import producao
 from paginas import estoque
+from paginas import custos
 
 # Configuração da página 
 st.set_page_config(
@@ -66,5 +67,8 @@ def menu():
         producao.modulo_producao()
     elif escolha == "⚙️ Configurações":
         configuracao.modulo_configuracao()
+    elif escolha == '💸 Custos Fixos':
+        custos.custos_fixos_page()
+
 
 
