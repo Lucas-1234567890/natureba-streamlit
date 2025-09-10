@@ -11,7 +11,9 @@ def sidebar_navegacao():
         "📊 Relatórios",
         "🔃 Produção",
         "📦 Estoque",
+        "💸 Custos Fixos",
         "⚙️ Configurações"
+
     ]
 
     escolha = st.sidebar.selectbox("Navegação", menu_de_opcoes)
