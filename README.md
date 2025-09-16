@@ -5,7 +5,7 @@ Sistema completo de gestão desenvolvido em Python/Streamlit para controle opera
 ## 📸 Preview do Sistema
 
 ### 🏠 Dashboard Principal
-![Dashboard](assets/screenshots/dashboard-main.png)
+![Dashboard](assets/screenshots/dashboard.png)
 *Visão geral com métricas financeiras, gráficos interativos e KPIs em tempo real*
 
 ### 🔐 Sistema de Login
