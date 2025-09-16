@@ -17,7 +17,7 @@ Sistema completo de gestão desenvolvido em Python/Streamlit para controle opera
 *Análises financeiras detalhadas e ranking de produtos*
 
 ### 📦 Gestão de Produtos
-![Produtos](assets/screenshots/produtos-crud.png)
+![Produtos](assets/screenshots/produtos-crud.png.png)
 *CRUD completo com filtros e ações rápidas*
 
 ## 🚀 Funcionalidades
