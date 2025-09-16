@@ -13,7 +13,6 @@ def iniciar_database():
             id INTEGER PRIMARY KEY,
             nome TEXT UNIQUE NOT NULL,
             preco_venda REAL NOT NULL,
-            custo_producao REAL NOT NULL,
             categoria TEXT NOT NULL,
             ativo BOOLEAN DEFAULT 1,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -30,31 +29,6 @@ def iniciar_database():
             unidade TEXT DEFAULT 'kg',
             fornecedor TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
-
-     # Tabela de receitas (relaciona produtos com ingredientes)
-    conn.execute('''
-        CREATE TABLE IF NOT EXISTS receitas (
-            id INTEGER PRIMARY KEY,
-            produto_id INTEGER,
-            ingrediente_id INTEGER,
-            quantidade REAL NOT NULL,
-            FOREIGN KEY (produto_id) REFERENCES produtos (id),
-            FOREIGN KEY (ingrediente_id) REFERENCES ingredientes (id)
-        )
-    ''')
-
-    # Tabela de produção diária
-    conn.execute('''
-        CREATE TABLE IF NOT EXISTS producao (
-            id INTEGER PRIMARY KEY,
-            produto_id INTEGER,
-            quantidade INTEGER NOT NULL,
-            custo_total REAL NOT NULL,
-            data_producao DATE NOT NULL,
-            observacoes TEXT,
-            FOREIGN KEY (produto_id) REFERENCES produtos (id)
         )
     ''')
 

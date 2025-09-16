@@ -6,7 +6,7 @@ from banco import get_dataframe, executar_query
 def modulo_vendas():
     st.header("💰 Vendas")
 
-    tab1, tab2 = st.tabs(["➕ Nova Venda", "📋 Histórico"])
+    tab1, tab2 = st.tabs(["➕ Nova Venda", "📋 Histórico"]) 
 
     # --------------------
     # Aba 1: Nova Venda
@@ -95,6 +95,7 @@ def modulo_vendas():
             vid = mapping[sel]
             row = vendas[vendas['id'] == vid].iloc[0]
 
+            # Formulário de edição -- somente o botão de salvar está dentro do form
             with st.form(f"form_edit_{vid}"):
                 col1, col2, col3 = st.columns(3)
                 with col1:
@@ -107,8 +108,7 @@ def modulo_vendas():
                 col1, col2 = st.columns(2)
                 with col1:
                     salvar = st.form_submit_button("💾 Salvar")
-                with col2:
-                    excluir = st.form_submit_button("🗑️ Excluir")
+                # removido o botão de excluir de dentro do form para evitar conflitos
 
                 if salvar:
                     total_edit = qtd_edit * preco_edit
@@ -119,7 +119,8 @@ def modulo_vendas():
                     st.success("Venda atualizada.")
                     st.rerun()
 
-                if excluir:
-                    executar_query("DELETE FROM vendas WHERE id=?", (vid,))
-                    st.warning("Venda excluída.")
-                    st.rerun()
+            # Botão de exclusão fora do form (ação imediata)
+            if st.button("🗑️ Excluir", key=f"del_{vid}"):
+                executar_query("DELETE FROM vendas WHERE id=?", (vid,))
+                st.warning("Venda excluída.")
+                st.rerun()

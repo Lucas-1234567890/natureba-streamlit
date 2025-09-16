@@ -5,18 +5,16 @@ import plotly.graph_objects as go
 import plotly.express as px
 from datetime import datetime, timedelta
 
+# --- Funções utilitárias
 def format_brl_currency(valor):
-    # Recebe número ou string, devolve 'R$ 1.234,56'
     try:
         v = float(valor)
     except (TypeError, ValueError):
         return "R$ 0,00"
-    s = f"{v:,.2f}"                 # ex: '1,234.56' (locale en)
-    s = s.replace(",", "X").replace(".", ",").replace("X", ".")
+    s = f"{v:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
     return f"R$ {s}"
 
 def format_brl_percent(valor):
-    # Recebe número (por exemplo 12.345 -> 12.3%) e devolve '12,3%'
     try:
         v = float(valor)
     except (TypeError, ValueError):
@@ -24,70 +22,63 @@ def format_brl_percent(valor):
     s = f"{v:.1f}".replace(".", ",")
     return f"{s}%"
 
-
-
+# --- Função principal
 def modulo_relatorios():
     st.header("📊 Relatórios e Análises")
-
     tab1, tab2, tab3 = st.tabs(["📈 Financeiro", "📦 Produtos", "📅 Período"])
 
+    # --- Aba Financeiro atualizada
     with tab1:
-       st.subheader("Análise Financeira")
-        #perido para analsie
-       col1, col2 = st.columns(2)
-       with col1:
+        st.subheader("💹 Métricas Financeiras")
+        col1, col2 = st.columns(2)
+        with col1:
             data_inicio = st.date_input("Data Início", value=datetime.now().date().replace(day=1))
-       with col2:
+        with col2:
             data_fim = st.date_input("Data Fim", value=datetime.now().date())
 
-       # -----------------------------
-# Análise de Rentabilidade
-# -----------------------------
-    rentabilidade = get_dataframe("""
-        SELECT 
-            SUM(v.total) as receita_total,
-            SUM(v.quantidade * p.custo_producao) as custo_variavel
-        FROM vendas v
-        JOIN produtos p ON v.produto_id = p.id
-        WHERE v.data_venda BETWEEN ? AND ?
-    """, (data_inicio, data_fim))
+        # Receita total
+        receita_total = float(get_dataframe(
+            "SELECT COALESCE(SUM(total),0) as total FROM vendas WHERE data_venda BETWEEN ? AND ?", 
+            (data_inicio, data_fim)
+        )['total'].iloc[0])
 
-    custos_fixos = get_dataframe("""
-        SELECT SUM(valor) as custo_fixo
-        FROM custos_operacionais
-        WHERE recorrente = 1 AND data_custo BETWEEN ? AND ?
-    """, (data_inicio, data_fim))
+        # Custos variáveis (entradas de estoque)
+        custos_variaveis = float(get_dataframe("""
+            SELECT COALESCE(SUM(m.quantidade * i.preco_kg),0) AS total_custo
+            FROM movimentacoes_estoque m
+            JOIN ingredientes i ON m.ingrediente_id = i.id
+            WHERE m.tipo = 'entrada' 
+            AND m.data_movimentacao BETWEEN ? AND ?
+        """, (data_inicio, data_fim))['total_custo'].iloc[0])
 
-    if not rentabilidade.empty and rentabilidade['receita_total'].iloc[0]:
-        receita_total = float(rentabilidade['receita_total'].iloc[0] or 0)
-        custo_variavel = float(rentabilidade['custo_variavel'].iloc[0] or 0)
-        custo_fixo = float(custos_fixos['custo_fixo'].iloc[0] or 0)
+        # Custos fixos
+        custos_fixos = float(get_dataframe("""
+            SELECT COALESCE(SUM(valor),0) as total_custo_fixo
+            FROM custos_operacionais
+            WHERE recorrente = 1 AND data_custo BETWEEN ? AND ?
+        """, (data_inicio, data_fim))['total_custo_fixo'].iloc[0])
 
-        margem_contribuicao = receita_total - custo_variavel
-        margem_contrib_percent = (margem_contribuicao / receita_total * 100) if receita_total > 0 else 0
-
-        lucro_liquido = receita_total - (custo_variavel + custo_fixo)
+        # Margens e indicadores
+        margem_contrib_total = receita_total - custos_variaveis
+        margem_contrib_percent = (margem_contrib_total / receita_total * 100) if receita_total > 0 else 0
+        lucro_liquido = receita_total - (custos_variaveis + custos_fixos)
         margem_liquida = (lucro_liquido / receita_total * 100) if receita_total > 0 else 0
+        ponto_equilibrio = (custos_fixos / (margem_contrib_percent / 100)) if margem_contrib_percent > 0 else 0
+        margem_seguranca = ((receita_total - ponto_equilibrio) / receita_total * 100) if receita_total > 0 else 0
 
-        # KPIs
-        col1, col2, col3, col4, col5, col6 = st.columns(6)
-        with col1:
-            st.metric("💰 Receita", format_brl_currency(receita_total))
-        with col2:
-            st.metric("💸 Custos Variáveis", format_brl_currency(custo_variavel))
-        with col3:
-            st.metric("🏠 Custos Fixos", format_brl_currency(custo_fixo))
-        with col4:
-            st.metric("📊 Margem Contribuição", format_brl_currency(margem_contribuicao), format_brl_percent(margem_contrib_percent))
-        with col5:
-            st.metric("📈 Lucro Líquido", format_brl_currency(lucro_liquido))
-        with col6:
-            st.metric("🎯 Margem Líquida", format_brl_percent(margem_liquida))
+        # Exibir KPIs
+        cols = st.columns(6)
+        cols[0].metric("💰 Receita Total", f"R$ {receita_total:,.2f}")
+        cols[1].metric("💸 Custos Variáveis", f"R$ {custos_variaveis:,.2f}", f"{margem_contrib_percent:.1f}%")
+        cols[2].metric("🏠 Custos Fixos", f"R$ {custos_fixos:,.2f}")
+        cols[3].metric("📊 Margem Contribuição", f"R$ {margem_contrib_total:,.2f}", f"{margem_contrib_percent:.1f}%")
+        cols[4].metric("📈 Lucro Líquido", f"R$ {lucro_liquido:,.2f}")
+        cols[5].metric("🎯 Margem Líquida", f"{margem_liquida:.1f}%")
 
-        # Gráfico de composição
+        # Gráfico de composição Receita vs Custos vs Lucro
         fig = go.Figure(data=[
-            go.Bar(name='Custos Variáveis', x=['Análise'], y=[custo_variavel], marker_color='#FF6B6B'),
-            go.Bar(name='Custos Fixos', x=['Análise'], y=[custo_fixo], marker_color='#FFA07A'),
+            go.Bar(name='Custos Variáveis', x=['Análise'], y=[custos_variaveis], marker_color='#FF6B6B'),
+            go.Bar(name='Custos Fixos', x=['Análise'], y=[custos_fixos], marker_color='#FFA07A'),
             go.Bar(name='Lucro Líquido', x=['Análise'], y=[lucro_liquido], marker_color='#4ECDC4')
         ])
         fig.update_layout(
@@ -96,76 +87,55 @@ def modulo_relatorios():
             yaxis_title='Valor (R$)'
         )
         st.plotly_chart(fig, use_container_width=True)
-    else:
-        st.info("Nenhuma venda no período selecionado.")
 
 
+    # --- Aba Produtos
     with tab2:
         st.subheader("Análise de Produtos")
 
         ranking_produtos = get_dataframe("""
             SELECT 
-                p.nome,
+                p.id,
+                p.nome AS produto,
                 p.categoria,
-                SUM(v.quantidade) as quantidade_vendida,
-                SUM(v.total) as receita,
-                SUM(v.quantidade * p.custo_producao) as custo,
-                (SUM(v.total) - SUM(v.quantidade * p.custo_producao)) as lucro,
-                ((SUM(v.total) - SUM(v.quantidade * p.custo_producao)) / SUM(v.total) * 100) as margem
+                SUM(v.quantidade) AS quantidade_vendida,
+                SUM(v.total) AS receita
             FROM vendas v
             JOIN produtos p ON v.produto_id = p.id
-            WHERE v.data_venda >= ?
+            WHERE v.data_venda BETWEEN ? AND ?
             GROUP BY p.id, p.nome, p.categoria
             ORDER BY receita DESC
-        """, (datetime.now().date() - timedelta(days=30),))
+        """, (data_inicio, data_fim))
 
         if not ranking_produtos.empty:
-    # top produtos por receita
-            st.subheader("🏆 Top Produtos por Receita (Últimos 30 dias)")
+            st.subheader("🏆 Top Produtos por Receita")
             fig = px.bar(
-                ranking_produtos.head(20), 
-                x='nome', 
+                ranking_produtos.head(20),
+                x='produto',
                 y='receita',
-                text='receita',              # mostra os valores nas barras
-                color='margem',              # cor baseada na margem
+                text='receita',
+                color='receita',
                 title="Receita por Produto",
-                color_continuous_scale=['#CFF5E0', '#5C977C'],  # degradê do verde claro ao verde forte
-                labels={'margem': 'Margem (%)', 'receita': 'Receita (R$)'}
+                color_continuous_scale=['#CFF5E0', '#5C977C'],
+                labels={'receita': 'Receita (R$)'}
             )
             fig.update_traces(texttemplate='R$ %{text:.2f}', textposition='outside')
-            fig.update_layout(xaxis_tickangle=-45,
-                            plot_bgcolor='#F6FAF8',
-                            paper_bgcolor='#F6FAF8',
-                            font=dict(color='#1F2A27', family='sans serif')
-                            )
             st.plotly_chart(fig, use_container_width=True)
 
-            # tabela completa
             st.subheader("📋 Ranking Completo")
             st.dataframe(
-        ranking_produtos.style.format({
-            'receita': 'R$ {:.2f}',
-            'custo': 'R$ {:.2f}',
-            'lucro': 'R$ {:.2f}',
-            'margem': '{:.1f}%'
-        }),
-        use_container_width=True,
-        column_config={
-            "margem": st.column_config.ProgressColumn(
-                "Margem",
-                format="%d%%",
-                min_value=0,
-                max_value=100,
-                width="small"
+                ranking_produtos.style.format({
+                    'receita': 'R$ {:.2f}',
+                    'quantidade_vendida': '{:.0f}'
+                }),
+                use_container_width=True
             )
-    }
-)
         else:
-            st.info("Nenhuma venda registrada nos últimos 30 dias.")
+            st.info("Nenhuma venda registrada no período selecionado.")
 
+    # --- Aba Período
     with tab3:
         st.subheader("Análise por Período")
-        # Vendas por dia da semana
         vendas_semana = get_dataframe("""
             SELECT 
                 CASE CAST(strftime('%w', data_venda) AS INTEGER)
@@ -185,43 +155,30 @@ def modulo_relatorios():
             ORDER BY strftime('%w', data_venda)
         """, (datetime.now().date() - timedelta(days=30),))
 
-        
         if not vendas_semana.empty:
             col1, col2 = st.columns(2)
-            
             with col1:
                 fig = px.bar(
                     vendas_semana,
-                    x='dia_semana', 
+                    x='dia_semana',
                     y='faturamento',
-                    text='faturamento',  # rótulos nas barras
+                    text='faturamento',
                     title="Faturamento por Dia da Semana",
-                    color_discrete_sequence=['#5C977C']  # cor tema
+                    color_discrete_sequence=['#5C977C']
                 )
                 fig.update_traces(texttemplate='R$ %{text:.2f}', textposition='outside')
-                fig.update_layout(
-                    plot_bgcolor='#F6FAF8',
-                    paper_bgcolor='#F6FAF8',
-                    font=dict(color='#1F2A27', family='sans serif')
-                )
                 st.plotly_chart(fig, use_container_width=True)
-            
+
             with col2:
                 fig = px.bar(
                     vendas_semana,
                     x='dia_semana',
                     y='produtos_vendidos',
-                    text='produtos_vendidos',  # rótulos nas barras
+                    text='produtos_vendidos',
                     title="Produtos Vendidos por Dia da Semana",
                     color_discrete_sequence=['#5C977C']
                 )
                 fig.update_traces(textposition='outside')
-                fig.update_layout(
-                    plot_bgcolor='#F6FAF8',
-                    paper_bgcolor='#F6FAF8',
-                    font=dict(color='#1F2A27', family='sans serif')
-                )
                 st.plotly_chart(fig, use_container_width=True)
-
-
-
+        else:
+            st.info("Nenhuma venda registrada nos últimos 30 dias.")

@@ -5,7 +5,6 @@ from paginas import produtos
 from paginas import vendas
 from paginas import relatórios
 from paginas import configuracao
-from paginas import producao
 from paginas import estoque
 from paginas import custos
 
@@ -63,8 +62,6 @@ def menu():
         relatórios.modulo_relatorios()
     elif escolha == "📦 Estoque":
         estoque.modulo_estoque()
-    elif escolha == "🔃 Produção":
-        producao.modulo_producao()
     elif escolha == "⚙️ Configurações":
         configuracao.modulo_configuracao()
     elif escolha == '💸 Custos Fixos':

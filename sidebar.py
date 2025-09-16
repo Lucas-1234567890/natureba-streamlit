@@ -9,7 +9,6 @@ def sidebar_navegacao():
         "🥖 Produtos",
         "💰 Vendas",
         "📊 Relatórios",
-        "🔃 Produção",
         "📦 Estoque",
         "💸 Custos Fixos",
         "⚙️ Configurações"
