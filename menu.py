@@ -7,6 +7,7 @@ from paginas import relatórios
 from paginas import configuracao
 from paginas import estoque
 from paginas import custos
+from auth import user_management_interface, get_current_user
 
 # Configuração da página 
 st.set_page_config(
@@ -43,12 +44,26 @@ st.markdown("""
         border-radius: 5px;
         margin: 1rem 0;
     }
+    .user-welcome {
+        background: linear-gradient(90deg, #5C977C, #7FBFA0);
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        margin-bottom: 1rem;
+        text-align: center;
+    }
 </style>
 """, unsafe_allow_html=True)
 
 
 def menu():
     escolha = sidebar_navegacao()
+    
+    # Saudação personalizada
+    user = get_current_user()
+    nome = user.get('nome_completo', 'Usuário')
+    st.markdown(f'<div class="user-welcome">👋 Bem-vindo(a), <strong>{nome}</strong>!</div>', unsafe_allow_html=True)
 
     st.markdown('<div class="main-header">🍀 Natureba - Sistema de Gestão</div>', unsafe_allow_html=True)
 
@@ -66,6 +81,5 @@ def menu():
         configuracao.modulo_configuracao()
     elif escolha == '💸 Custos Fixos':
         custos.custos_fixos_page()
-
-
-
+    elif escolha == "👥 Usuários":
+        user_management_interface()

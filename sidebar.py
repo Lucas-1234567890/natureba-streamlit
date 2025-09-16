@@ -1,4 +1,5 @@
 import streamlit as st
+from auth import show_user_info, is_admin
 
 def sidebar_navegacao():
     st.sidebar.markdown("### 🍀 Natureba")
@@ -12,10 +13,16 @@ def sidebar_navegacao():
         "📦 Estoque",
         "💸 Custos Fixos",
         "⚙️ Configurações"
-
     ]
+    
+    # Adicionar gestão de usuários apenas para admin
+    if is_admin():
+        menu_de_opcoes.append("👥 Usuários")
 
     escolha = st.sidebar.selectbox("Navegação", menu_de_opcoes)
+    
+    # Mostrar informações do usuário logado
+    show_user_info()
 
     # Expander para mostrar os links só quando clicar
     with st.sidebar.expander("👨‍💻 Feito por Lucas Amorim"):
