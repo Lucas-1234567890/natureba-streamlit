@@ -2,6 +2,24 @@
 
 Sistema completo de gestão desenvolvido em Python/Streamlit para controle operacional e financeiro de padarias artesanais com sistema de autenticação multiusuário.
 
+## 📸 Preview do Sistema
+
+### 🏠 Dashboard Principal
+![Dashboard](assets/screenshots/dashboard-main.png)
+*Visão geral com métricas financeiras, gráficos interativos e KPIs em tempo real*
+
+### 🔐 Sistema de Login
+![Login](assets/screenshots/login-screen.png)
+*Interface de autenticação com tema personalizado Natureba*
+
+### 📊 Relatórios e Analytics
+![Relatórios](assets/screenshots/relatorios-kpi.png)
+*Análises financeiras detalhadas e ranking de produtos*
+
+### 📦 Gestão de Produtos
+![Produtos](assets/screenshots/produtos-crud.png)
+*CRUD completo com filtros e ações rápidas*
+
 ## 🚀 Funcionalidades
 
 ### 📊 Core Business
