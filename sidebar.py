@@ -12,7 +12,6 @@ def sidebar_navegacao():
         "📊 Relatórios",
         "📦 Estoque",
         "💸 Custos Fixos",
-        "🤖 Previsões",
         "⚙️ Configurações"
     ]
     
