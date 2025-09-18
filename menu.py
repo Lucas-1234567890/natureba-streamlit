@@ -1,7 +1,7 @@
 from sidebar import *
 from paginas.dashboard import *
 import streamlit as st
-from paginas import produtos, vendas, relatórios, configuracao, estoque, custos, insights
+from paginas import produtos, vendas, relatórios, configuracao, estoque, custos
 from auth import user_management_interface, get_current_user
 
 # Configuração da página 
@@ -76,7 +76,5 @@ def menu():
         configuracao.modulo_configuracao()
     elif escolha == '💸 Custos Fixos':
         custos.custos_fixos_page()
-    elif escolha == '🤖 Previsões':
-        insights.modulo_ml_insights()
     elif escolha == "👥 Usuários":
         user_management_interface()
