@@ -35,13 +35,18 @@ def modulo_configuracao():
 
             if st.button("📊 Gerar Relatório Excel"):
                 vendas_relatorio = get_dataframe("""
-                    SELECT v.data_venda, v.hora_venda, p.nome as produto,
-                           p.categoria, v.quantidade, v.preco_unitario, v.total,
-                           p.custo_producao, (v.preco_unitario - p.custo_producao) as margem_unitaria
+                   SELECT v.data_venda,
+                   v.hora_venda,
+                   p.nome as produto,
+                   p.categoria,
+                   v.quantidade, 
+                   v.preco_unitario,
+                   v.total
                     FROM vendas v
                     JOIN produtos p ON v.produto_id = p.id
                     WHERE v.data_venda BETWEEN ? AND ?
                     ORDER BY v.data_venda DESC
+
                 """, (data_inicio, data_fim))
 
                 if not vendas_relatorio.empty:
