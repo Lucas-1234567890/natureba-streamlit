@@ -68,10 +68,11 @@ def dashboard():
 
     # Custos Variáveis
     query_custos_var = """
-        SELECT COALESCE(SUM(m.quantidade * i.preco_kg),0) AS total_custo
-        FROM movimentacoes_estoque m
-        JOIN ingredientes i ON m.ingrediente_id = i.id
-        JOIN vendas v ON v.data_venda BETWEEN ? AND ?  -- vínculo de período
+    SELECT COALESCE(SUM(m.quantidade * i.preco_kg), 0) AS total_custo
+    FROM movimentacoes_estoque m
+    JOIN ingredientes i ON m.ingrediente_id = i.id
+    WHERE m.tipo = 'entrada' 
+    AND DATE(m.data_movimentacao) BETWEEN ? AND ?
     """
     custos_variaveis = float(get_dataframe(query_custos_var, (data_inicio, data_fim))['total_custo'].iloc[0])
 
