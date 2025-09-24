@@ -44,11 +44,11 @@ def modulo_relatorios():
 
         # Custos variáveis (entradas de estoque)
         custos_variaveis = float(get_dataframe("""
-            SELECT COALESCE(SUM(m.quantidade * i.preco_kg),0) AS total_custo
-            FROM movimentacoes_estoque m
-            JOIN ingredientes i ON m.ingrediente_id = i.id
-            WHERE m.tipo = 'entrada' 
-            AND m.data_movimentacao BETWEEN ? AND ?
+              SELECT COALESCE(SUM(m.quantidade * i.preco_kg), 0) AS total_custo
+                FROM movimentacoes_estoque m
+                JOIN ingredientes i ON m.ingrediente_id = i.id
+                WHERE m.tipo = 'entrada' 
+                AND DATE(m.data_movimentacao) BETWEEN ? AND ?
         """, (data_inicio, data_fim))['total_custo'].iloc[0])
 
         # Custos fixos
