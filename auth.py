@@ -1,6 +1,6 @@
 import streamlit as st
 from datetime import datetime, timedelta
-from banco import authenticate_user, create_user, get_all_users, update_user
+from funcoesAux import authenticate_user, create_user, get_all_users, update_user
 import pandas as pd
 
 # Configurações de segurança

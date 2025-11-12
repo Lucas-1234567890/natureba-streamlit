@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime, timedelta
-from banco import get_dataframe, executar_query
+from funcoesAux import get_dataframe, executar_query
 import plotly.express as px
 
 def modulo_estoque():
@@ -18,7 +18,7 @@ def modulo_estoque():
     tab1, tab2, tab3, tab4 = st.tabs(["📦 Ingredientes", "➕ Movimentação", "📋 Histórico", "⚠️ Alertas"])
 
     # ------------------------
-    # TAB 1 - INGREDIENTES (CRUD simples)
+    # TAB 1 - INGREDIENTES (CRUD simples) 
     # ------------------------
     with tab1:
         st.subheader("Gestão de Ingredientes")

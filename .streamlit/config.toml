@@ -1,7 +1,7 @@
 [theme]
-base = "light"
-primaryColor = "#5C977C"            # verde Natureba
-backgroundColor = "#F6FAF8"         # fundo bem claro
-secondaryBackgroundColor = "#EAF3EF" # cartões/sidebars
-textColor = "#1F2A27"               # texto escuro confortável
-font = "sans serif"
+base = "dark"
+primaryColor = "#4C8F70"              # verde Natureba destacado
+backgroundColor = "#1B2621"           # fundo escuro
+secondaryBackgroundColor = "#2C3E2D"  # cartões/sidebars com contraste leve
+textColor = "#F5FAF5"                 # texto claro para ler no fundo escuro
+font = "Inter, sans-serif"

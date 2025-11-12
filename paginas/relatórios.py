@@ -1,26 +1,11 @@
 import streamlit as st
 import pandas as pd
-from banco import get_dataframe
+from funcoesAux import get_dataframe, format_brl_currency, format_brl_percent
 import plotly.graph_objects as go
 import plotly.express as px
 from datetime import datetime, timedelta
 
-# --- Funções utilitárias
-def format_brl_currency(valor):
-    try:
-        v = float(valor)
-    except (TypeError, ValueError):
-        return "R$ 0,00"
-    s = f"{v:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-    return f"R$ {s}"
 
-def format_brl_percent(valor):
-    try:
-        v = float(valor)
-    except (TypeError, ValueError):
-        return "0,0%"
-    s = f"{v:.1f}".replace(".", ",")
-    return f"{s}%"
 
 # --- Função principal
 def modulo_relatorios():
@@ -44,11 +29,11 @@ def modulo_relatorios():
 
         # Custos variáveis (entradas de estoque)
         custos_variaveis = float(get_dataframe("""
-            SELECT COALESCE(SUM(m.quantidade * i.preco_kg),0) AS total_custo
+            SELECT COALESCE(SUM(m.quantidade * i.preco_kg), 0) AS total_custo
             FROM movimentacoes_estoque m
             JOIN ingredientes i ON m.ingrediente_id = i.id
             WHERE m.tipo = 'entrada' 
-            AND m.data_movimentacao BETWEEN ? AND ?
+            AND DATE(m.data_movimentacao) BETWEEN ? AND ?
         """, (data_inicio, data_fim))['total_custo'].iloc[0])
 
         # Custos fixos
@@ -94,18 +79,21 @@ def modulo_relatorios():
         st.subheader("Análise de Produtos")
 
         ranking_produtos = get_dataframe("""
-            SELECT 
-                p.id,
-                p.nome AS produto,
-                p.categoria,
-                SUM(v.quantidade) AS quantidade_vendida,
-                SUM(v.total) AS receita
-            FROM vendas v
-            JOIN produtos p ON v.produto_id = p.id
-            WHERE v.data_venda BETWEEN ? AND ?
-            GROUP BY p.id, p.nome, p.categoria
-            ORDER BY receita DESC
-        """, (data_inicio, data_fim))
+       SELECT 
+    p.id,
+    p.nome AS produto,
+    p.categoria,
+    SUM(iv.quantidade) AS quantidade_vendida,
+    SUM(iv.subtotal) AS receita
+FROM itens_venda iv
+JOIN produtos p ON iv.produto_id = p.id
+JOIN vendas v ON iv.venda_id = v.id
+WHERE v.data_venda BETWEEN ? AND ?
+GROUP BY p.id, p.nome, p.categoria
+ORDER BY receita DESC
+
+    """, (data_inicio, data_fim))
+
 
         if not ranking_produtos.empty:
             st.subheader("🏆 Top Produtos por Receita")
@@ -147,8 +135,9 @@ def modulo_relatorios():
                     WHEN 5 THEN 'Sexta'
                     WHEN 6 THEN 'Sábado'
                 END as dia_semana,
-                SUM(total) as faturamento,
-                SUM(quantidade) as produtos_vendidos
+                        SUM(total) as faturamento,
+        COUNT(id) as produtos_vendidos
+
             FROM vendas
             WHERE data_venda >= ?
             GROUP BY strftime('%w', data_venda)

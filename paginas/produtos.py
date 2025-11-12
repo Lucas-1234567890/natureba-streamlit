@@ -1,5 +1,5 @@
 import streamlit as st
-from banco import executar_query, get_dataframe
+from funcoesAux import executar_query, get_dataframe
 
 def modulo_produtos():
     st.header("📦 Gestão de Produtos")
@@ -126,22 +126,42 @@ def modulo_produtos():
             st.markdown("---")
             st.subheader(f"Editar produto — ID {edit_id}")
             with st.form(f"form_edit_{edit_id}"):
-                nome_edit = st.text_input("Nome", value=row['nome'])
+                # nome com key única
+                nome_edit = st.text_input("Nome", value=row['nome'], key=f"nome_edit_{edit_id}")
+
+                # tenta converter preço para float com fallback
+                try:
+                    preco_val = float(row['preco_venda'])
+                except Exception:
+                    preco_val = 0.0
+
+                preco_edit = st.number_input(
+                    "Preço de Venda (R$)",
+                    min_value=0.0,
+                    step=0.1,
+                    format="%.2f",
+                    value=preco_val,
+                    key=f"preco_edit_{edit_id}"
+                )
+
                 categorias = ["Tradicional", "Integral", "Doce", "Salgado", "Especial"]
                 idx = categorias.index(row['categoria']) if row['categoria'] in categorias else 0
-                categoria_edit = st.selectbox("Categoria", categorias, index=idx)
+                categoria_edit = st.selectbox("Categoria", categorias, index=idx, key=f"categoria_edit_{edit_id}")
 
                 salvar = st.form_submit_button("💾 Salvar")
                 cancelar = st.form_submit_button("✖️ Cancelar")
 
                 if salvar:
-                    executar_query(
-                        "UPDATE produtos SET nome=?, categoria=? WHERE id=?",
-                        (nome_edit.strip(), categoria_edit, edit_id)
-                    )
-                    st.success("Produto atualizado.")
-                    st.session_state.pop("editar_id")
-                    st.rerun()
+                    if not nome_edit.strip():
+                        st.error("Nome não pode ficar vazio.")
+                    else:
+                        executar_query(
+                            "UPDATE produtos SET nome=?, categoria=?, preco_venda=? WHERE id=?",
+                            (nome_edit.strip(), categoria_edit, float(preco_edit), edit_id)
+                        )
+                        st.success("Produto atualizado.")
+                        st.session_state.pop("editar_id")
+                        st.rerun()
                 if cancelar:
                     st.session_state.pop("editar_id")
                     st.info("Edição cancelada.")

@@ -7,6 +7,7 @@ from paginas import relatórios
 from paginas import configuracao
 from paginas import estoque
 from paginas import custos
+from paginas import receitas
 from auth import user_management_interface, get_current_user
 
 # Configuração da página 
@@ -71,6 +72,8 @@ def menu():
         dashboard()
     elif escolha == "🥖 Produtos":
         produtos.modulo_produtos()
+    elif escolha == "📋 Receitas":
+        receitas.modulo_receitas()
     elif escolha == "💰 Vendas":
         vendas.modulo_vendas()
     elif escolha == "📊 Relatórios":

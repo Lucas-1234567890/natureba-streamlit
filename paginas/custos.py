@@ -1,7 +1,7 @@
 import streamlit as st
 from datetime import date
 import pandas as pd
-from banco import executar_query, get_dataframe
+from funcoesAux import executar_query, get_dataframe
 
 def custos_fixos_page():
     st.title("💸 Custos Fixos Mensais")

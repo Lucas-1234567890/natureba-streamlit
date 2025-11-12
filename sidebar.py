@@ -8,6 +8,7 @@ def sidebar_navegacao():
     menu_de_opcoes = [
         "🏠 Dashboard",
         "🥖 Produtos",
+        "📋 Receitas",
         "💰 Vendas",
         "📊 Relatórios",
         "📦 Estoque",

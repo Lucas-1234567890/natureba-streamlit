@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from banco import get_dataframe
+from funcoesAux import get_dataframe
 from datetime import datetime
 import plotly.express as px
 from dateutil.relativedelta import relativedelta
@@ -68,10 +68,11 @@ def dashboard():
 
     # Custos Variáveis
     query_custos_var = """
-        SELECT COALESCE(SUM(m.quantidade * i.preco_kg),0) AS total_custo
+        SELECT COALESCE(SUM(m.quantidade * i.preco_kg), 0) AS total_custo
         FROM movimentacoes_estoque m
         JOIN ingredientes i ON m.ingrediente_id = i.id
-        JOIN vendas v ON v.data_venda BETWEEN ? AND ?  -- vínculo de período
+        WHERE m.tipo = 'entrada' 
+        AND DATE(m.data_movimentacao) BETWEEN ? AND ?
     """
     custos_variaveis = float(get_dataframe(query_custos_var, (data_inicio, data_fim))['total_custo'].iloc[0])
 
@@ -108,13 +109,18 @@ def dashboard():
     # Vendas por produto
     st.subheader("📊 Vendas por Produto")
     vendas_produto = get_dataframe(f"""
-        SELECT p.nome, SUM(v.quantidade) as total_vendido, SUM(v.total) as faturamento
-        FROM vendas v
-        JOIN produtos p ON v.produto_id = p.id
+        SELECT 
+            p.nome, 
+            SUM(iv.quantidade) AS total_vendido, 
+            SUM(iv.subtotal) AS faturamento
+        FROM itens_venda iv
+        JOIN produtos p ON iv.produto_id = p.id
+        JOIN vendas v ON iv.venda_id = v.id
         WHERE v.data_venda BETWEEN ? AND ? {where_produto}
         GROUP BY p.nome
         ORDER BY total_vendido DESC
     """, params)
+
     if not vendas_produto.empty:
         fig_produtos = px.bar(
             vendas_produto, y='nome', x='total_vendido', text='total_vendido', orientation='h',

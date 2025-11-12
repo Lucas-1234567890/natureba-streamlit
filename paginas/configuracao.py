@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime, timedelta
-from banco import get_dataframe, executar_query
+from funcoesAux import get_dataframe, executar_query
 import os
 from io import BytesIO  # <- necessário para Excel em memória
 
@@ -34,31 +34,65 @@ def modulo_configuracao():
             data_fim = st.date_input("Data Fim", value=datetime.now().date())
 
             if st.button("📊 Gerar Relatório Excel"):
-                vendas_relatorio = get_dataframe("""
-                    SELECT v.data_venda, v.hora_venda, p.nome as produto,
-                           p.categoria, v.quantidade, v.preco_unitario, v.total,
-                           p.custo_producao, (v.preco_unitario - p.custo_producao) as margem_unitaria
-                    FROM vendas v
-                    JOIN produtos p ON v.produto_id = p.id
+                # Itens vendidos detalhados
+                itens_vendidos = get_dataframe("""
+                    SELECT 
+                        v.data_venda,
+                        v.hora_venda,
+                        p.nome AS produto,
+                        p.categoria,
+                        iv.quantidade,
+                        iv.preco_unitario,
+                        iv.subtotal AS total,
+                        iv.custo_variavel,
+                        (iv.subtotal - iv.custo_variavel) AS margem
+                    FROM itens_venda iv
+                    JOIN vendas v ON iv.venda_id = v.id
+                    JOIN produtos p ON iv.produto_id = p.id
                     WHERE v.data_venda BETWEEN ? AND ?
                     ORDER BY v.data_venda DESC
                 """, (data_inicio, data_fim))
 
-                if not vendas_relatorio.empty:
-                    # Criar buffer em memória
-                    output = BytesIO()
-                    vendas_relatorio.to_excel(output, index=False, engine='xlsxwriter')
-                    output.seek(0)  # importante para reiniciar ponteiro
+                # Resumo diário das vendas
+                resumo_vendas = itens_vendidos.groupby(['data_venda']).agg(
+                    total_venda=('total', 'sum'),
+                    custo_total=('custo_variavel', 'sum'),
+                    margem_total=('margem', 'sum'),
+                    qtd_itens=('quantidade', 'sum')
+                ).reset_index()
 
-                    # Botão para download
-                    st.download_button(
-                        label="📥 Baixar Relatório de Vendas",
-                        data=output,
-                        file_name="relatorio_vendas.xlsx",
-                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                    )
-                else:
-                    st.warning("Nenhuma venda encontrada no período selecionado.")
+                # Produtos cadastrados
+                produtos = get_dataframe("SELECT * FROM produtos")
+
+                # Custos operacionais no período
+                custos = get_dataframe("""
+                    SELECT * FROM custos_operacionais
+                    WHERE data_custo BETWEEN ? AND ?
+                """, (data_inicio, data_fim))
+
+                # Movimentações de estoque
+                movimentos = get_dataframe("""
+                    SELECT * FROM movimentacoes_estoque
+                    WHERE data_movimentacao BETWEEN ? AND ?
+                """, (data_inicio, data_fim))
+
+                # Criar Excel em memória
+                output = BytesIO()
+                with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+                    itens_vendidos.to_excel(writer, sheet_name='Itens Vendidos', index=False)
+                    resumo_vendas.to_excel(writer, sheet_name='Resumo Vendas', index=False)
+                    produtos.to_excel(writer, sheet_name='Produtos', index=False)
+                    custos.to_excel(writer, sheet_name='Custos Operacionais', index=False)
+                    movimentos.to_excel(writer, sheet_name='Movimentacoes Estoque', index=False)
+
+                output.seek(0)
+                st.download_button(
+                    label="📥 Baixar Relatório Completo",
+                    data=output,
+                    file_name=f"relatorio_natureba_{data_inicio}_{data_fim}.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                )
+
 
     # ------------------ TAB 2: Gerenciar Dados ------------------
     with tab2:
