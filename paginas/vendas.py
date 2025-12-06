@@ -49,8 +49,18 @@ def modulo_vendas():
                 qtd = st.number_input("Qtd", min_value=1, value=1, key="qtd_produto")
             
             with col3:
-                produto_sel = produtos[produtos['id']==produto_id].iloc[0]
-                preco = st.number_input("Preço Unit.", min_value=0.01, value=float(produto_sel['preco_venda']), format="%.2f", key="preco_produto")
+                produto_sel = produtos[produtos['id'] == produto_id].iloc[0]
+                
+                # Atualiza o valor inicial do número com base no produto selecionado
+                # key fixa, mas value dinâmico
+                preco = st.number_input(
+                    "Preço Unit.", 
+                    min_value=0.01, 
+                    value=float(produto_sel['preco_venda']), 
+                    format="%.2f", 
+                    key=f"preco_produto_{produto_id}"  # chave única por produto
+                )
+
             
             with col4:
                 st.markdown("<br>", unsafe_allow_html=True)

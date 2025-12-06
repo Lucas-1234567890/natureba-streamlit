@@ -1,19 +1,29 @@
 import streamlit as st
 import pandas as pd
+from datetime import datetime
 from funcoesAux import (
     get_dataframe, 
+    executar_query,
     adicionar_item_receita, 
     remover_item_receita,
     get_receita_produto,
     calcular_custo_produto,
-    verificar_disponibilidade_receita
+    verificar_disponibilidade_receita,
+    baixar_estoque_por_receita
 )
+import plotly.express as px
 
 def modulo_receitas():
-    """Módulo de gestão de receitas (ingredientes por produto)"""
-    st.header("📋 Receitas e Custo de Produção")
+    """Módulo de gestão de receitas e estoque de produtos prontos"""
+    st.header("📋 Receitas & Produção")
     
-    tab1, tab2, tab3 = st.tabs(["🔧 Gerenciar Receitas", "💰 Análise de Custos", "📊 Simulador de Produção"])
+    tab1, tab2, tab3, tab4, tab5 = st.tabs([
+        "🔧 Gerenciar Receitas", 
+        "💰 Análise de Custos", 
+        "📊 Simulador",
+        "🍞 Estoque Pronto",
+        "📈 Produção"
+    ])
     
     # =============================
     # TAB 1 - GERENCIAR RECEITAS
@@ -267,3 +277,235 @@ def modulo_receitas():
                 st.success(f"✅ {mensagem}")
             else:
                 st.error(f"❌ {mensagem}")
+
+    # =============================
+    # TAB 4 - ESTOQUE DE PRODUTOS PRONTOS
+    # =============================
+    with tab4:
+        st.subheader("🍞 Estoque de Produtos Prontos")
+        st.markdown("Gerencie o estoque de pães e produtos já fabricados")
+        
+        # Criar tabela se não existir
+        executar_query("""
+            CREATE TABLE IF NOT EXISTS estoque_pronto (
+                id INTEGER PRIMARY KEY,
+                produto_id INTEGER NOT NULL,
+                quantidade_atual REAL DEFAULT 0,
+                ultima_atualizacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (produto_id) REFERENCES produtos (id)
+            )
+        """)
+        
+        # Buscar estoque atual
+        estoque_pronto = get_dataframe("""
+            SELECT 
+                ep.id,
+                p.nome as produto,
+                p.categoria,
+                ep.quantidade_atual,
+                ep.ultima_atualizacao
+            FROM estoque_pronto ep
+            JOIN produtos p ON ep.produto_id = p.id
+            ORDER BY p.nome
+        """)
+        
+        # Métricas
+        if not estoque_pronto.empty:
+            total_unidades = estoque_pronto['quantidade_atual'].sum()
+            produtos_estoque = len(estoque_pronto)
+            zerados = len(estoque_pronto[estoque_pronto['quantidade_atual'] <= 0])
+            
+            c1, c2, c3 = st.columns(3)
+            c1.metric("🍞 Total em Estoque", f"{total_unidades:.0f} unidades")
+            c2.metric("📦 Produtos", produtos_estoque)
+            c3.metric("⚠️ Estoque Zerado", zerados)
+            
+            # Tabela de estoque
+            st.dataframe(
+                estoque_pronto.rename(columns={
+                    'produto': 'Produto',
+                    'categoria': 'Categoria',
+                    'quantidade_atual': 'Quantidade',
+                    'ultima_atualizacao': 'Última Atualização'
+                }).style.format({
+                    'Quantidade': '{:.0f}'
+                }),
+                use_container_width=True
+            )
+            
+            # Gráfico de estoque
+            fig = px.bar(
+                estoque_pronto,
+                x='produto',
+                y='quantidade_atual',
+                text='quantidade_atual',
+                color='categoria',
+                title="Estoque Atual por Produto",
+                labels={'quantidade_atual': 'Quantidade', 'produto': 'Produto'}
+            )
+            fig.update_traces(texttemplate='%{text:.0f}', textposition='outside')
+            st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.info("Nenhum produto em estoque no momento")
+        
+        # Ajuste manual de estoque
+        st.markdown("---")
+        st.subheader("🔧 Ajustar Estoque Manualmente")
+        
+        produtos_ativos = get_dataframe("SELECT id, nome FROM produtos WHERE ativo=1 ORDER BY nome")
+        
+        if not produtos_ativos.empty:
+            with st.form("form_ajuste_estoque"):
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    prod_ajuste_id = st.selectbox(
+                        "Produto",
+                        options=produtos_ativos['id'].tolist(),
+                        format_func=lambda x: produtos_ativos[produtos_ativos['id']==x]['nome'].iloc[0]
+                    )
+                with col2:
+                    tipo_ajuste = st.selectbox("Tipo", ["Adicionar", "Remover", "Definir"])
+                with col3:
+                    qtd_ajuste = st.number_input("Quantidade", min_value=0.0, step=1.0, format="%.0f")
+                
+                submit_ajuste = st.form_submit_button("✅ Ajustar Estoque")
+                
+                if submit_ajuste:
+                    # Verificar se produto já existe no estoque
+                    existe = get_dataframe(
+                        "SELECT quantidade_atual FROM estoque_pronto WHERE produto_id = ?",
+                        (prod_ajuste_id,)
+                    )
+                    
+                    if existe.empty:
+                        # Criar registro
+                        if tipo_ajuste == "Definir" or tipo_ajuste == "Adicionar":
+                            executar_query(
+                                "INSERT INTO estoque_pronto (produto_id, quantidade_atual) VALUES (?, ?)",
+                                (prod_ajuste_id, qtd_ajuste)
+                            )
+                            st.success(f"✅ Estoque criado com {qtd_ajuste:.0f} unidades")
+                        else:
+                            st.error("❌ Produto não existe no estoque para remover")
+                    else:
+                        qtd_atual = float(existe.iloc[0]['quantidade_atual'])
+                        
+                        if tipo_ajuste == "Adicionar":
+                            nova_qtd = qtd_atual + qtd_ajuste
+                        elif tipo_ajuste == "Remover":
+                            nova_qtd = max(0, qtd_atual - qtd_ajuste)
+                        else:  # Definir
+                            nova_qtd = qtd_ajuste
+                        
+                        executar_query(
+                            "UPDATE estoque_pronto SET quantidade_atual = ?, ultima_atualizacao = ? WHERE produto_id = ?",
+                            (nova_qtd, datetime.now(), prod_ajuste_id)
+                        )
+                        st.success(f"✅ Estoque ajustado: {qtd_atual:.0f} → {nova_qtd:.0f}")
+                    
+                    st.rerun()
+
+    # =============================
+    # TAB 5 - REGISTRAR PRODUÇÃO
+    # =============================
+    with tab5:
+        st.subheader("📈 Registrar Produção")
+        st.markdown("Registre a produção de produtos e baixe automaticamente o estoque de ingredientes")
+        
+        produtos_com_receita = get_dataframe("""
+            SELECT DISTINCT p.id, p.nome
+            FROM produtos p
+            JOIN receitas r ON p.id = r.produto_id
+            WHERE p.ativo = 1
+            ORDER BY p.nome
+        """)
+        
+        if produtos_com_receita.empty:
+            st.warning("⚠️ Cadastre receitas antes de registrar produção")
+            return
+        
+        with st.form("form_producao"):
+            col1, col2, col3 = st.columns([2, 1, 2])
+            
+            with col1:
+                prod_producao_id = st.selectbox(
+                    "Produto Produzido",
+                    options=produtos_com_receita['id'].tolist(),
+                    format_func=lambda x: produtos_com_receita[produtos_com_receita['id']==x]['nome'].iloc[0]
+                )
+            
+            with col2:
+                qtd_producao = st.number_input("Quantidade", min_value=1, value=10, step=1)
+            
+            with col3:
+                data_producao = st.date_input("Data", value=datetime.now().date())
+            
+            submit_producao = st.form_submit_button("✅ Registrar Produção")
+            
+            if submit_producao:
+                # Verificar disponibilidade
+                disponivel, msg = verificar_disponibilidade_receita(prod_producao_id, qtd_producao)
+                
+                if not disponivel:
+                    st.error(f"❌ {msg}")
+                else:
+                    # Baixar estoque de ingredientes
+                    sucesso_baixa, msg_baixa = baixar_estoque_por_receita(prod_producao_id, qtd_producao)
+                    
+                    if sucesso_baixa:
+                        # Atualizar estoque de produtos prontos
+                        existe = get_dataframe(
+                            "SELECT quantidade_atual FROM estoque_pronto WHERE produto_id = ?",
+                            (prod_producao_id,)
+                        )
+                        
+                        if existe.empty:
+                            executar_query(
+                                "INSERT INTO estoque_pronto (produto_id, quantidade_atual) VALUES (?, ?)",
+                                (prod_producao_id, qtd_producao)
+                            )
+                        else:
+                            executar_query(
+                                "UPDATE estoque_pronto SET quantidade_atual = quantidade_atual + ?, ultima_atualizacao = ? WHERE produto_id = ?",
+                                (qtd_producao, datetime.now(), prod_producao_id)
+                            )
+                        
+                        st.success(f"✅ Produção registrada: {qtd_producao} unidades de {produtos_com_receita[produtos_com_receita['id']==prod_producao_id]['nome'].iloc[0]}")
+                        st.balloons()
+                        st.rerun()
+                    else:
+                        st.error(f"❌ Erro ao baixar estoque: {msg_baixa}")
+        
+        # Histórico de produção (últimos 7 dias)
+        st.markdown("---")
+        st.subheader("📊 Histórico Recente de Produção")
+        
+        hist_producao = get_dataframe("""
+            SELECT 
+                DATE(m.data_movimentacao) as data,
+                i.nome as ingrediente,
+                SUM(m.quantidade) as qtd_utilizada,
+                i.unidade,
+                m.motivo
+            FROM movimentacoes_estoque m
+            JOIN ingredientes i ON m.ingrediente_id = i.id
+            WHERE m.tipo = 'saida' 
+            AND m.motivo LIKE 'Produção%'
+            AND DATE(m.data_movimentacao) >= DATE('now', '-7 days')
+            GROUP BY DATE(m.data_movimentacao), i.nome, i.unidade, m.motivo
+            ORDER BY m.data_movimentacao DESC
+        """)
+        
+        if not hist_producao.empty:
+            st.dataframe(
+                hist_producao.rename(columns={
+                    'data': 'Data',
+                    'ingrediente': 'Ingrediente',
+                    'qtd_utilizada': 'Qtd Utilizada',
+                    'unidade': 'Unidade',
+                    'motivo': 'Motivo'
+                }),
+                use_container_width=True
+            )
+        else:
+            st.info("Nenhuma produção registrada nos últimos 7 dias")

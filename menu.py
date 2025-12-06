@@ -3,7 +3,6 @@ from paginas.dashboard import *
 import streamlit as st
 from paginas import produtos
 from paginas import vendas
-from paginas import relatórios
 from paginas import configuracao
 from paginas import estoque
 from paginas import custos
@@ -18,7 +17,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Estilo CSS customizado - padrão verde #5C977C
+# Estilo CSS customizado
 st.markdown("""
 <style>
     .main-header {
@@ -37,13 +36,20 @@ st.markdown("""
         border-left: 4px solid #5C977C;
         margin-bottom: 1rem;
     }
-    .success-box {
-        background: #dff5ea;
-        border: 1px solid #b8e0cc;
-        color: #1f3d2a;
-        padding: 0.75rem;
-        border-radius: 5px;
-        margin: 1rem 0;
+    .quick-action-card {
+        background: linear-gradient(135deg, #5C977C 0%, #7FBFA0 100%);
+        padding: 1.5rem;
+        border-radius: 15px;
+        color: white;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        margin-bottom: 1rem;
+    }
+    .quick-action-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 12px rgba(0,0,0,0.2);
     }
     .user-welcome {
         background: linear-gradient(90deg, #5C977C, #7FBFA0);
@@ -68,16 +74,15 @@ def menu():
 
     st.markdown('<div class="main-header">🍀 Natureba - Sistema de Gestão</div>', unsafe_allow_html=True)
 
+    # Roteamento otimizado (sem relatórios)
     if escolha == "🏠 Dashboard":
         dashboard()
     elif escolha == "🥖 Produtos":
         produtos.modulo_produtos()
-    elif escolha == "📋 Receitas":
+    elif escolha == "📋 Receitas & Produção":
         receitas.modulo_receitas()
     elif escolha == "💰 Vendas":
         vendas.modulo_vendas()
-    elif escolha == "📊 Relatórios":
-        relatórios.modulo_relatorios()
     elif escolha == "📦 Estoque":
         estoque.modulo_estoque()
     elif escolha == "⚙️ Configurações":
