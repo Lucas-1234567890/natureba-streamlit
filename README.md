@@ -1,79 +1,129 @@
-# Natureba - Sistema de Gestão para Padaria
+# 🍞 Natureba — Sistema de Gestão para Padarias Artesanais
 
-Sistema completo de gestão desenvolvido em Python/Streamlit para controle operacional e financeiro de padarias artesanais.
+Sistema completo para controle de **custos, estoque, receitas e margens em tempo real**.
 
-## Funcionalidades
-
-- **Dashboard**: Métricas em tempo real com faturamento, vendas e margem
-- **Produtos**: CRUD completo com controle de custos e precificação
-- **Vendas**: Registro e histórico com análise de performance
-- **Estoque**: Controle de ingredientes com alertas e lista de compras
-- **Produção**: Gestão de receitas com débito automático de ingredientes
-- **Relatórios**: Análises financeiras e KPIs operacionais
-
-## Stack Técnica
-
-- **Backend**: Python 3.8+ com SQLite
-- **Frontend**: Streamlit com Plotly para visualizações
-- **Dados**: Pandas para manipulação e análise
-
-## Setup Rápido
-
-```bash
-# Instalar dependências
-pip install streamlit pandas plotly xlsxwriter
-
-# Executar aplicação
-streamlit run main.py
-
-# Acesso: http://localhost:8501
-```
-
-## Arquitetura
-
-```
-├── main.py              # Entry point
-├── banco.py             # Database layer + queries
-├── menu.py              # App routing
-├── sidebar.py           # Navigation component
-└── paginas/             # Feature modules
-    ├── dashboard.py     # Analytics dashboard
-    ├── produtos.py      # Product management
-    ├── vendas.py        # Sales operations
-    ├── estoque.py       # Inventory control
-    ├── producao.py      # Production management
-    ├── relatórios.py    # Reports & insights
-    └── configuracao.py  # System config
-```
-
-## Base de Dados
-
-Schema normalizado com 7 tabelas principais:
-- `produtos`: Catálogo com preços e custos
-- `vendas`: Transações de venda
-- `ingredientes`: Inventário de matéria-prima
-- `receitas`: Composição produto-ingrediente
-- `producao`: Registros de fabricação
-- `movimentacoes_estoque`: Audit trail de estoque
-- `custos_operacionais`: Despesas fixas
-
-## Features Técnicas
-
-- **Cache de queries** para performance otimizada
-- **Validação de dados** com tratamento de erros
-- **Backup automático** com exportação Excel
-- **Interface responsiva** com tema customizado
-- **Cálculos automáticos** de margem e rentabilidade
-
-## KPIs Calculados
-
-- Faturamento diário/mensal/período
-- Margem de lucro por produto
-- Top performers por categoria
-- Análise de sazonalidade
-- Controle de break-even
+**Por:** Lucas Amorim – Eng. Dados & IA  
+📧 lucas.amorim.porciuncula@gmail.com  
+🔗 LinkedIn • GitHub
 
 ---
 
-**Desenvolvido por**: Lucas Amorim | Eng. Dados e IA  
-**Contato**: lucas.amorim.porciuncula@gmail.com | [LinkedIn](https://linkedin.com/in/lucas-amorim-powerbi)
+## 🚀 O Problema
+A maioria das padarias **não sabe o custo real** de cada produto e perde dinheiro sem perceber.
+
+**O Natureba resolve isso:**
+- Calcula custo e margem automaticamente
+- Controla estoque e ingredientes
+- Ajuda a precificar corretamente
+- Informa lucros, prejuízos e break-even
+
+---
+
+## 🔑 Credenciais Demo
+Login: adm
+Senha: admin123
+
+---
+
+## ⚡ Instalação
+```bash
+pip install streamlit pandas plotly xlsxwriter
+python teste.py        # Cria usuário admin
+streamlit run main.py  # Inicia sistema
+```
+## 📊 Funcionalidades
+
+### Painel (Dashboard)
+- KPIs em tempo real  
+- Margem de Contribuição  
+- Lucro Líquido  
+- Break-even  
+- Alertas de estoque  
+
+### Produtos & Receitas
+- Cadastro de produtos  
+- Cálculo automático de custo:
+
+- Alerta de margem baixa (<20%)
+
+### Vendas
+- Carrinho multi-itens  
+- Valida estoque antes de vender  
+- Baixa estoque automático  
+
+### Estoque
+- Controle de ingredientes e produtos prontos  
+- Histórico completo de movimentação  
+- Lista automática de compras  
+
+### Usuários
+- Admin e Operador  
+- Senhas com hash SHA-256  
+
+### Backup & Relatórios
+- Backup do SQLite  
+- Planilhas Excel multi-aba  
+
+---
+
+## 📈 Métricas Principais
+
+- Margem de Contribuição = (Receita - Custos Variáveis) / Receita
+- Break-Even = Custos Fixos / Margem de Contribuição
+- Ticket Médio = Faturamento Total / Nº de Vendas
+- 
+```bash
+natureba/
+├── main.py # Ponto de entrada
+├── banco.py # Banco (SQLite)
+├── funcoesAux.py # Lógica de negócio
+├── paginas/ # Módulos (dashboard, vendas, estoque...)
+└── natureba.db # Base local
+```
+
+
+---
+
+## 📚 Fluxo de Uso
+
+### Setup Inicial
+
+### Operação Diária
+- Registrar produção (baixa ingredientes)  
+- Registrar vendas (baixa produtos)  
+
+### Gestão Mensal
+- Analisar margens  
+- Ajustar preços  
+- Registrar custos fixos  
+- Exportar relatórios  
+
+---
+
+## 🔐 Segurança
+- Hash SHA-256 + salt  
+- Níveis de permissão  
+- Auditoria com timestamp  
+- Expiração de sessão (8h)  
+
+---
+
+## 🧭 Roadmap
+- App Mobile (offline)  
+- Previsão de demanda (IA)  
+- Multi-tenancy (SaaS)  
+- API REST  
+- Emissão de NF-e  
+
+---
+
+## 📄 Licença
+MIT License © 2025 Lucas Amorim  
+
+---
+
+<div align="center">
+Feito com ❤️ em Python  
+<br>
+Se gostou, deixe uma ⭐ no repositório!
+</div>
